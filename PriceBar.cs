@@ -15,7 +15,13 @@ public class PriceBar
 
     public override string ToString()
     {
-        return $"{Date:yyyy-MM-dd} | O:{Open:F2} | H:{High:F2} | L:{Low:F2} | C:{Close:F2} | Adj:{AdjustedClose:F2} | Vol:{Volume:N0}";
+        return $"{Date:yyyy-MM-dd} | " +
+               $"O:{(Open?.ToString("F2") ?? "N/A")} | " +
+               $"H:{(High?.ToString("F2") ?? "N/A")} | " +
+               $"L:{(Low?.ToString("F2") ?? "N/A")} | " +
+               $"C:{(Close?.ToString("F2") ?? "N/A")} | " +
+               $"Adj:{(AdjustedClose?.ToString("F2") ?? "N/A")} | " +
+               $"Vol:{(Volume?.ToString("N0") ?? "N/A")}";
     }
 
     public string ToCsv()

@@ -32,9 +32,9 @@ class Program
             var prices = await client.GetHistoricalPricesAsync(ticker, startDate, endDate, interval);
 
             // Display results
-            Console.WriteLine($"\n{'=',-60}");
+            Console.WriteLine($"\n{new string('=', 60)}");
             Console.WriteLine($"Successfully retrieved {prices.Count} price bars");
-            Console.WriteLine($"{'=',-60}\n");
+            Console.WriteLine($"{new string('=', 60)}\n");
 
             if (prices.Count > 0)
             {
@@ -226,9 +226,9 @@ class Program
         var startPrice = validPrices.First().Close ?? validPrices.First().AdjustedClose;
         var endPrice = validPrices.Last().Close ?? validPrices.Last().AdjustedClose;
 
-        Console.WriteLine($"\n{'=',-60}");
+        Console.WriteLine($"\n{new string('=', 60)}");
         Console.WriteLine($"Statistics for {ticker}");
-        Console.WriteLine($"{'=',-60}");
+        Console.WriteLine($"{new string('=', 60)}");
 
         if (startPrice.HasValue && endPrice.HasValue)
         {
