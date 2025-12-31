@@ -30,9 +30,21 @@ public class YahooFinanceClient : IDisposable
 
     /// <summary>
     /// Authenticate using Selenium WebDriver (bypasses TLS fingerprinting)
+    /// Uses cached tokens if available and valid
     /// </summary>
-    public async Task<bool> AuthenticateAsync(bool headless = true)
+    public async Task<bool> AuthenticateAsync(bool headless = true, bool useCache = true)
     {
+        // Try to use cached authentication first
+        if (useCache && TokenCache.TryLoad(out var cachedCrumb, out var cachedCookies))
+        {
+            _crumb = cachedCrumb;
+            if (cachedCookies != null)
+            {
+                _cookieContainer.Add(cachedCookies.GetAllCookies());
+                return true;
+            }
+        }
+
         try
         {
             using var seleniumAuth = new SeleniumAuthenticator();
@@ -43,6 +55,12 @@ public class YahooFinanceClient : IDisposable
             _crumb = crumb;
 
             Console.WriteLine("  ✓ Cookies transferred to HTTP client");
+
+            // Cache the authentication for 12 hours
+            var cookieContainer = new CookieContainer();
+            cookieContainer.Add(cookies.GetAllCookies());
+            TokenCache.Save(crumb, cookieContainer, TimeSpan.FromHours(12));
+
             return true;
         }
         catch (Exception ex)

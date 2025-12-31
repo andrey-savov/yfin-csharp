@@ -8,7 +8,7 @@ class Program
         Console.WriteLine("=========================================\n");
 
         // Parse command-line arguments
-        if (!TryParseArguments(args, out var ticker, out var startDate, out var endDate, out var interval, out var outputFile))
+        if (!TryParseArguments(args, out var ticker, out var startDate, out var endDate, out var interval, out var outputFile, out var forceAuth))
         {
             PrintUsage();
             return 1;
@@ -18,8 +18,8 @@ class Program
         {
             using var client = new YahooFinanceClient();
 
-            // Authenticate
-            var authSuccess = await client.AuthenticateAsync();
+            // Authenticate (use cache unless --force-auth is specified)
+            var authSuccess = await client.AuthenticateAsync(useCache: !forceAuth);
             if (!authSuccess)
             {
                 Console.WriteLine("\nERROR: Authentication failed!");
@@ -95,24 +95,39 @@ class Program
         out DateTime startDate,
         out DateTime endDate,
         out string interval,
-        out string? outputFile)
+        out string? outputFile,
+        out bool forceAuth)
     {
         ticker = "";
         startDate = DateTime.MinValue;
         endDate = DateTime.Now;
         interval = "1d";
         outputFile = null;
+        forceAuth = false;
 
         // Parse named arguments
         var argDict = new Dictionary<string, string>();
+        var flags = new HashSet<string>();
+
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i].StartsWith("--") && i + 1 < args.Length)
+            if (args[i].StartsWith("--"))
             {
-                argDict[args[i]] = args[i + 1];
-                i++; // Skip next arg
+                if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
+                {
+                    argDict[args[i]] = args[i + 1];
+                    i++; // Skip next arg
+                }
+                else
+                {
+                    // It's a flag without a value
+                    flags.Add(args[i]);
+                }
             }
         }
+
+        // Check for force-auth flag
+        forceAuth = flags.Contains("--force-auth");
 
         // Required: ticker
         if (!argDict.TryGetValue("--ticker", out var tickerValue) || string.IsNullOrWhiteSpace(tickerValue))
@@ -198,7 +213,8 @@ class Program
         Console.WriteLine("  --end <DATE>           End date in YYYY-MM-DD format (default: today)");
         Console.WriteLine("  --interval <INTERVAL>  Time interval (default: 1d)");
         Console.WriteLine("                         Valid: 1m, 2m, 5m, 15m, 30m, 60m, 1h, 90m, 1d, 5d, 1wk, 1mo, 3mo");
-        Console.WriteLine("  --output <FILE>        Output CSV file (default: <ticker>_<start>_<end>.csv)\n");
+        Console.WriteLine("  --output <FILE>        Output CSV file (default: <ticker>_<start>_<end>.csv)");
+        Console.WriteLine("  --force-auth           Force fresh authentication (ignore cached tokens)\n");
         Console.WriteLine("Examples:");
         Console.WriteLine("  # Download 1 year of daily data for Apple");
         Console.WriteLine("  YahooFinanceDownloader --ticker AAPL\n");
@@ -208,6 +224,8 @@ class Program
         Console.WriteLine("  YahooFinanceDownloader --ticker GOOGL --start 2024-12-01 --interval 1h\n");
         Console.WriteLine("  # Download and save to specific file");
         Console.WriteLine("  YahooFinanceDownloader --ticker TSLA --output tesla_prices.csv\n");
+        Console.WriteLine("  # Force fresh authentication (bypass cache)");
+        Console.WriteLine("  YahooFinanceDownloader --ticker AAPL --force-auth\n");
     }
 
     static void DisplayStatistics(string ticker, List<PriceBar> prices)
